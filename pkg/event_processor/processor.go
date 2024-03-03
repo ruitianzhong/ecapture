@@ -68,8 +68,9 @@ func (this *EventProcessor) dispatch(e event.IEventStruct) {
 		eWorker = NewEventWorker(e.GetUUID(), this)
 		this.addWorkerByUUID(eWorker)
 	}
-
+	fmt.Println("begin Write if you can not see end later, it mean eventProcessor.Serve routine might hang")
 	err := eWorker.Write(e)
+	fmt.Println("end Write")
 	if err != nil {
 		//...
 		this.GetLogger().Fatalf("write event failed , error:%v", err)

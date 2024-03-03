@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"ecapture/user/event"
 	"encoding/hex"
+	"fmt"
 	"time"
 )
 
@@ -131,6 +132,7 @@ func (ew *eventWorker) Run() {
 			// 输出包
 			if ew.tickerCount > MaxTickerCount {
 				//ew.processor.GetLogger().Printf("eventWorker TickerCount > %d, event closed.", MaxTickerCount)
+				time.Sleep(time.Second*15) // inject some delay here (just to show the possible interleaving)
 				ew.Close()
 				return
 			}
@@ -150,4 +152,5 @@ func (ew *eventWorker) Close() {
 	ew.Display()
 	ew.tickerCount = 0
 	ew.processor.delWorkerByUUID(ew)
+	fmt.Println("worker uuid",ew.GetUUID())
 }

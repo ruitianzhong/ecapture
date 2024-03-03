@@ -91,3 +91,43 @@ func TestEventProcessor_Serve(t *testing.T) {
 	t.Log(buf.String())
 	t.Log("done")
 }
+// go test  -v ./pkg/event_processor/  -run TestHang 
+func TestHang(t *testing.T) {
+
+	logger := log.Default()
+	var buf bytes.Buffer
+	logger.SetOutput(&buf)
+
+	ep := NewEventProcessor(logger, true)
+
+	go func() {
+		ep.Serve()
+	}()
+	content, err := os.ReadFile(testFile)
+	if err != nil {
+		//Do something
+		log.Fatalf("open file error: %s, file:%s", err.Error(), testFile)
+	}
+	lines := strings.Split(string(content), "\n")
+	line := lines[0]
+	var eventSSL SSLDataEventTmp
+	json.Unmarshal([]byte(line), &eventSSL)
+	payloadFile := fmt.Sprintf("testdata/%d.bin", eventSSL.Timestamp)
+	b, e := os.ReadFile(payloadFile)
+	fmt.Println(string(b))
+	if e != nil {
+		t.Fatalf("read payload file error: %s, file:%s", e.Error(), payloadFile)
+	}
+	copy(eventSSL.Data[:], b)
+	ep.Write(&BaseEvent{Data_len: eventSSL.Data_len, Data: eventSSL.Data, DataType: eventSSL.DataType, Timestamp: eventSSL.Timestamp, Pid: eventSSL.Pid, Tid: eventSSL.Tid, Comm: eventSSL.Comm, Fd: eventSSL.Fd, Version: eventSSL.Version})
+	time.Sleep(2 * time.Second)
+	// stress test mocking the same process
+	for i := 0; i < 3000; i++ {
+		ep.Write(&BaseEvent{Data_len: eventSSL.Data_len, Data: eventSSL.Data, DataType: eventSSL.DataType, Timestamp: eventSSL.Timestamp, Pid: eventSSL.Pid, Tid: eventSSL.Tid, Comm: eventSSL.Comm, Fd: eventSSL.Fd, Version: eventSSL.Version})
+	}
+	fmt.Println("no hang")
+	time.Sleep(time.Second * 20)
+	fmt.Println("end")
+
+	ep.Close()
+}
